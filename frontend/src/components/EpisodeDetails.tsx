@@ -38,7 +38,7 @@ export const EpisodeDetails: React.FC<EpisodeDetailsProps> = ({ episode, onBack 
         <div className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-4">
             <div className="bg-secondary rounded-xl p-4 sm:p-5 border border-border">
-              <div className="prose dark:prose-invert max-w-none text-sm sm:text-base">\
+              <div className="prose dark:prose-invert max-w-none text-sm sm:text-base">
                 <ReactMarkdown>{episode.cheat_sheet}</ReactMarkdown>
               </div>
             </div>
