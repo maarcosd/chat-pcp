@@ -1,0 +1,16 @@
+networks:
+  net:
+    driver: bridge
+
+services:
+  chroma:
+    image: chromadb/chroma:0.6.4.dev226
+    environment:
+      - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
+      - IS_PERSISTENT=TRUE
+    volumes:
+      - ./transcriber/data/chroma_db:/chroma/chroma
+    ports:
+      - "8000:8000"
+    networks:
+      - net

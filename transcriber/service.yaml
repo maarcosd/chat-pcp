@@ -1,0 +1,26 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: transcriber
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      containers:
+        - image: ${IMAGE}
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key
+                  key: latest
+          volumeMounts:
+            - name: chroma-store
+              mountPath: /chroma
+      volumes:
+        - name: chroma-store
+          cloudStorageBucket:
+            bucket: ${EMBEDDINGS_BUCKET_NAME}
+            path: chroma_db

@@ -1,0 +1,5 @@
+data/*
+venv/
+.env
+google_credentials.json
+.pytest_cache/

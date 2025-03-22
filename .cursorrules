@@ -1,0 +1,3 @@
+# Transcriber
+
+Whenever you're running any commands within this context, make sure to use `venv`. It should be located under `transcriber/venv`
