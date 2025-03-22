@@ -7,6 +7,7 @@ import { EpisodeDetails } from './components/EpisodeDetails';
 import { EpisodesList } from './components/EpisodesList';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
+import { logPageView } from './lib/analytics';
 import { Episode } from './types';
 
 type Tab = 'chat' | 'episodes';
@@ -19,6 +20,11 @@ function App() {
     window.matchMedia('(prefers-color-scheme: dark)').matches
   );
   const [activeTab, setActiveTab] = useState<Tab>('chat');
+
+  // Track page view when the app loads
+  useEffect(() => {
+    logPageView();
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
