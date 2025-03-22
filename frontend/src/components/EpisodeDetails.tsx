@@ -5,9 +5,10 @@ import { Episode } from '../types';
 interface EpisodeDetailsProps {
   episode: Episode;
   onBack: () => void;
+  isDark: boolean;
 }
 
-export const EpisodeDetails: React.FC<EpisodeDetailsProps> = ({ episode, onBack }) => {
+export const EpisodeDetails: React.FC<EpisodeDetailsProps> = ({ episode, onBack, isDark }) => {
   return (
     <>
       <div className="sticky top-0 bg-background border-b border-border p-3 sm:p-4 flex items-center">
@@ -38,8 +39,16 @@ export const EpisodeDetails: React.FC<EpisodeDetailsProps> = ({ episode, onBack 
         <div className="mt-4 sm:mt-6">
           <div className="space-y-3 sm:space-y-4">
             <div className="bg-secondary rounded-xl p-4 sm:p-5 border border-border">
-              <div className="prose dark:prose-invert max-w-none text-sm sm:text-base">
-                <ReactMarkdown>{episode.cheat_sheet}</ReactMarkdown>
+              <div className={`prose ${isDark ? 'prose-invert' : ''} max-w-none text-sm sm:text-base`}>
+                <ReactMarkdown
+                  components={{
+                    a: ({ node, ...props }) => (
+                      <a target="_blank" rel="noopener noreferrer" {...props} />
+                    ),
+                  }}
+                >
+                  {episode.cheat_sheet}
+                </ReactMarkdown>
               </div>
             </div>
           </div>

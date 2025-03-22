@@ -99,6 +99,7 @@ function App() {
               <EpisodeDetails 
                 episode={selectedEpisode} 
                 onBack={() => setSelectedEpisode(null)} 
+                isDark={isDark}
               />
             )}
           </div>
