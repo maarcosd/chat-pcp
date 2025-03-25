@@ -16,6 +16,7 @@ app.get("/api/episodes", async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const searchQuery = ((req.query.search as string) || "").toLowerCase();
 
     if (page < 1 || pageSize < 1) {
       return res
@@ -41,14 +42,23 @@ app.get("/api/episodes", async (req, res) => {
           new Date(a.creationTime).getTime()
       );
 
-    // Calculate pagination
+    // Filter files based on search query if provided
+    const filteredFileInfos = searchQuery
+      ? fileInfos.filter((fileInfo) => {
+          // Replace hyphens with spaces in filename for comparison
+          const normalizedFilename = fileInfo.name.replace(/-/g, " ");
+          return normalizedFilename.toLowerCase().includes(searchQuery);
+        })
+      : fileInfos;
+
+    // Calculate pagination after filtering
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    const paginatedFiles = fileInfos.slice(startIndex, endIndex);
+    const paginatedFileInfos = filteredFileInfos.slice(startIndex, endIndex);
 
-    // Download files in parallel
+    // Download only the filtered and paginated files
     const episodes = await Promise.all(
-      paginatedFiles.map(async (fileInfo) => {
+      paginatedFileInfos.map(async (fileInfo) => {
         const file = bucket.file(fileInfo.name);
         const [content] = await file.download();
         return JSON.parse(content.toString());
@@ -60,8 +70,8 @@ app.get("/api/episodes", async (req, res) => {
       pagination: {
         currentPage: page,
         pageSize,
-        totalEpisodes: fileInfos.length,
-        totalPages: Math.ceil(fileInfos.length / pageSize),
+        totalEpisodes: filteredFileInfos.length,
+        totalPages: Math.ceil(filteredFileInfos.length / pageSize),
       },
     });
   } catch (error) {

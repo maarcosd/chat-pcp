@@ -23,6 +23,7 @@ function App() {
     window.matchMedia('(prefers-color-scheme: dark)').matches
   );
   const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Track page view when the app loads
   useEffect(() => {
@@ -38,7 +39,9 @@ function App() {
 
   const fetchEpisodes = useCallback(async (page: number) => {
     try {
-      const response = await axios.get<EpisodesResponse>(`http://localhost:3000/api/episodes?page=${page}&pageSize=7`);
+      const response = await axios.get<EpisodesResponse>(
+        `http://localhost:3000/api/episodes?page=${page}&pageSize=7${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+      );
       const { episodes: newEpisodes, pagination } = response.data;
 
       if (page === 1) {
@@ -55,15 +58,19 @@ function App() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [setEpisodes, setCurrentPage, setHasMore, setIsLoading, setIsLoadingMore]);
+  }, [searchQuery]); // Only depend on searchQuery
 
+  // Initial load and search query changes
   useEffect(() => {
     const abortController = new AbortController();
+    setIsLoading(true);
+    setCurrentPage(1);
+    setEpisodes([]);
 
     const fetchData = async () => {
       try {
         const response = await axios.get<EpisodesResponse>(
-          `http://localhost:3000/api/episodes?page=1&pageSize=7`,
+          `http://localhost:3000/api/episodes?page=1&pageSize=7${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`,
           { signal: abortController.signal }
         );
         const { episodes: newEpisodes, pagination } = response.data;
@@ -88,7 +95,7 @@ function App() {
     return () => {
       abortController.abort();
     };
-  }, []); // Empty dependency array since we only want to fetch on mount
+  }, [searchQuery]); // Only depend on searchQuery
 
   const loadMore = useCallback(() => {
     if (!isLoadingMore && hasMore) {
@@ -100,6 +107,10 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
+
+  const handleSearchQueryChange = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   return (
     <ChatRuntimeProvider>
@@ -152,6 +163,8 @@ function App() {
                 isLoadingMore={isLoadingMore}
                 hasMore={hasMore}
                 onLoadMore={loadMore}
+                searchQuery={searchQuery}
+                onSearchQueryChange={handleSearchQueryChange}
               />
             ) : (
               <EpisodeDetails 

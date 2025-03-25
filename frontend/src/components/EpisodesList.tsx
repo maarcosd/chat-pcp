@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import { Episode } from '../types';
 
 interface EpisodesListProps {
@@ -8,6 +9,8 @@ interface EpisodesListProps {
   isLoadingMore: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 }
 
 const EpisodeSkeleton = () => (
@@ -28,11 +31,27 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({
   isLoading,
   isLoadingMore,
   hasMore,
-  onLoadMore
+  onLoadMore,
+  searchQuery,
+  onSearchQueryChange
 }) => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const debouncedSearchQuery = useDebounce(localSearchQuery, 300);
   const observer = useRef<IntersectionObserver>();
+
+  // Update local state when parent's search query changes
+  React.useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
+
+  // Update parent's search query when debounced value changes
+  React.useEffect(() => {
+    if (debouncedSearchQuery !== searchQuery) {
+      onSearchQueryChange(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery, searchQuery, onSearchQueryChange]);
+
   const lastEpisodeRef = useCallback((node: HTMLDivElement) => {
     if (isLoadingMore) return;
     if (observer.current) observer.current.disconnect();
@@ -45,10 +64,6 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({
 
     if (node) observer.current.observe(node);
   }, [isLoadingMore, hasMore, onLoadMore]);
-
-  const filteredEpisodes = episodes.filter(episode =>
-    episode.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className="flex flex-col h-full">
@@ -63,8 +78,8 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({
               <input
                 type="text"
                 placeholder="Search episodes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-secondary text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 autoFocus
               />
@@ -89,14 +104,13 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({
             <EpisodeSkeleton />
             <EpisodeSkeleton />
             <EpisodeSkeleton />
-            <EpisodeSkeleton />
           </div>
         ) : (
           <>
-            {filteredEpisodes.map((episode, index) => (
+            {episodes.map((episode, index) => (
               <div
                 key={episode.title}
-                ref={index === filteredEpisodes.length - 1 ? lastEpisodeRef : undefined}
+                ref={index === episodes.length - 1 ? lastEpisodeRef : undefined}
                 className="p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 bg-secondary hover:bg-secondary/80 border border-border hover:shadow-sm"
                 onClick={() => onEpisodeSelect(episode)}
               >
