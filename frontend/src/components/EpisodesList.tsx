@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Episode } from '../types';
 
 interface EpisodesListProps {
   episodes: Episode[];
   onEpisodeSelect: (episode: Episode) => void;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  onLoadMore: () => void;
 }
 
 const EpisodeSkeleton = () => (
@@ -19,9 +22,29 @@ const EpisodeSkeleton = () => (
   </div>
 );
 
-export const EpisodesList: React.FC<EpisodesListProps> = ({ episodes, onEpisodeSelect, isLoading }) => {
+export const EpisodesList: React.FC<EpisodesListProps> = ({ 
+  episodes, 
+  onEpisodeSelect, 
+  isLoading,
+  isLoadingMore,
+  hasMore,
+  onLoadMore
+}) => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const observer = useRef<IntersectionObserver>();
+  const lastEpisodeRef = useCallback((node: HTMLDivElement) => {
+    if (isLoadingMore) return;
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        onLoadMore();
+      }
+    });
+
+    if (node) observer.current.observe(node);
+  }, [isLoadingMore, hasMore, onLoadMore]);
 
   const filteredEpisodes = episodes.filter(episode =>
     episode.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -60,50 +83,60 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({ episodes, onEpisodeS
       </div>
       <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 overflow-y-auto flex-1">
         {isLoading ? (
-          <>
+          <div className="space-y-2 sm:space-y-3">
             <EpisodeSkeleton />
             <EpisodeSkeleton />
             <EpisodeSkeleton />
             <EpisodeSkeleton />
             <EpisodeSkeleton />
             <EpisodeSkeleton />
-          </>
+          </div>
         ) : (
-          filteredEpisodes.map((episode) => (
-            <div
-              key={episode.title}
-              className="p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 bg-secondary hover:bg-secondary/80 border border-border hover:shadow-sm"
-              onClick={() => onEpisodeSelect(episode)}
-            >
-              <h3 className="font-semibold text-sm sm:text-base text-foreground">{episode.title}</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 line-clamp-2">{episode.summary}</p>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {new Date(episode.pub_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-                <a 
-                  href={episode.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex items-center"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-                  </svg>
-                  Listen
-                </a>
+          <>
+            {filteredEpisodes.map((episode, index) => (
+              <div
+                key={episode.title}
+                ref={index === filteredEpisodes.length - 1 ? lastEpisodeRef : undefined}
+                className="p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200 bg-secondary hover:bg-secondary/80 border border-border hover:shadow-sm"
+                onClick={() => onEpisodeSelect(episode)}
+              >
+                <h3 className="font-semibold text-sm sm:text-base text-foreground">{episode.title}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 line-clamp-2">{episode.summary}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground flex items-center">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(episode.pub_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                  <a 
+                    href={episode.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline flex items-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                    </svg>
+                    Listen
+                  </a>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+            {isLoadingMore && (
+              <div className="space-y-2 sm:space-y-3">
+                <EpisodeSkeleton />
+                <EpisodeSkeleton />
+                <EpisodeSkeleton />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

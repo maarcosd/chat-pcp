@@ -7,3 +7,15 @@ export interface Episode {
   keywords: string[];
   cheat_sheet?: string;
 }
+
+export interface PaginationMetadata {
+  currentPage: number;
+  pageSize: number;
+  totalEpisodes: number;
+  totalPages: number;
+}
+
+export interface EpisodesResponse {
+  episodes: Episode[];
+  pagination: PaginationMetadata;
+}

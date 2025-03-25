@@ -1,6 +1,6 @@
 import { Thread } from '@/components/assistant-ui/thread';
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import { ChatRuntimeProvider } from './components/ChatRuntimeProvider';
 import { EpisodeDetails } from './components/EpisodeDetails';
@@ -8,13 +8,16 @@ import { EpisodesList } from './components/EpisodesList';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { logPageView } from './lib/analytics';
-import { Episode } from './types';
+import { Episode, EpisodesResponse } from './types';
 
 type Tab = 'chat' | 'episodes';
 
 function App() {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
   const [isDark, setIsDark] = useState(() => 
     window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -33,20 +36,37 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  useEffect(() => {
-    const fetchEpisodes = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get('http://localhost:3000/api/episodes');
-        setEpisodes(response.data.episodes);
-      } catch (error) {
-        console.error('Error fetching episodes:', error);
-      } finally {
-        setIsLoading(false);
+  const fetchEpisodes = useCallback(async (page: number) => {
+    try {
+      const response = await axios.get<EpisodesResponse>(`http://localhost:3000/api/episodes?page=${page}&pageSize=7`);
+      const { episodes: newEpisodes, pagination } = response.data;
+
+      if (page === 1) {
+        setEpisodes(newEpisodes);
+      } else {
+        setEpisodes(prev => [...prev, ...newEpisodes]);
       }
-    };
-    fetchEpisodes();
+
+      setCurrentPage(pagination.currentPage);
+      setHasMore(pagination.currentPage < pagination.totalPages);
+    } catch (error) {
+      console.error('Error fetching episodes:', error);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchEpisodes(1);
+  }, [fetchEpisodes]);
+
+  const loadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      setIsLoadingMore(true);
+      fetchEpisodes(currentPage + 1);
+    }
+  }, [currentPage, fetchEpisodes, hasMore, isLoadingMore]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -100,6 +120,9 @@ function App() {
                 episodes={episodes} 
                 onEpisodeSelect={setSelectedEpisode} 
                 isLoading={isLoading}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
+                onLoadMore={loadMore}
               />
             ) : (
               <EpisodeDetails 
