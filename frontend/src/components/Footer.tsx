@@ -2,8 +2,8 @@ export const Footer = (): JSX.Element => {
   return (
     <footer className="w-full border-t border-border bg-background">
       <div className="px-4 w-full">
-        <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground py-4">
-          <div className="mb-2 md:mb-0">
+        <div className="flex justify-between items-center text-sm text-muted-foreground py-4">
+          <div>
             ChatPCP is not affiliated with Pop Culture Parenting.
           </div>
           <a

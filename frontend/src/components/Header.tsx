@@ -19,7 +19,7 @@ export const Header: React.FC<HeaderProps> = ({ isDark, onToggleDarkMode }) => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-6">
           <div className="flex items-center justify-between sm:flex-1">
             <div className="flex items-center gap-4 sm:gap-6">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-border shadow-sm">
+              <div className="w-36 h-24 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-border shadow-sm">
                 <img 
                   src="/hero-image-small.jpeg" 
                   alt="Pop Culture Parenting" 
