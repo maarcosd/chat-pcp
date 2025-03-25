@@ -55,11 +55,40 @@ function App() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [setEpisodes, setCurrentPage, setHasMore, setIsLoading, setIsLoadingMore]);
 
   useEffect(() => {
-    fetchEpisodes(1);
-  }, [fetchEpisodes]);
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<EpisodesResponse>(
+          `http://localhost:3000/api/episodes?page=1&pageSize=7`,
+          { signal: abortController.signal }
+        );
+        const { episodes: newEpisodes, pagination } = response.data;
+
+        setEpisodes(newEpisodes);
+        setCurrentPage(pagination.currentPage);
+        setHasMore(pagination.currentPage < pagination.totalPages);
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          console.log('Request cancelled');
+          return;
+        }
+        console.error('Error fetching episodes:', error);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []); // Empty dependency array since we only want to fetch on mount
 
   const loadMore = useCallback(() => {
     if (!isLoadingMore && hasMore) {
