@@ -25,6 +25,22 @@ const EpisodeSkeleton = () => (
   </div>
 );
 
+const EmptyState = ({ searchQuery }: { searchQuery: string }) => (
+  <div className="flex flex-col items-center justify-center p-8 text-center">
+    <svg className="w-16 h-16 text-muted-foreground mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <h3 className="text-lg font-semibold text-foreground mb-2">No episodes found</h3>
+    <p className="text-sm text-muted-foreground max-w-sm">
+      {searchQuery ? (
+        <>We couldn't find any episodes matching "{searchQuery}". Try adjusting your search terms.</>
+      ) : (
+        <>No episodes are available at the moment. Please check back later.</>
+      )}
+    </p>
+  </div>
+);
+
 export const EpisodesList: React.FC<EpisodesListProps> = ({ 
   episodes, 
   onEpisodeSelect, 
@@ -105,6 +121,8 @@ export const EpisodesList: React.FC<EpisodesListProps> = ({
             <EpisodeSkeleton />
             <EpisodeSkeleton />
           </div>
+        ) : episodes.length === 0 ? (
+          <EmptyState searchQuery={searchQuery} />
         ) : (
           <>
             {episodes.map((episode, index) => (
