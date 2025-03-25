@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { logEvent } from '../lib/analytics';
 import { Episode } from '../types';
 
 interface EpisodeDetailsProps {
@@ -9,6 +10,10 @@ interface EpisodeDetailsProps {
 }
 
 export const EpisodeDetails: React.FC<EpisodeDetailsProps> = ({ episode, onBack, isDark }) => {
+  useEffect(() => {
+    logEvent('episode', 'view', episode.title);
+  }, [episode.title]);
+
   return (
     <>
       <div className="sticky top-0 bg-background border-b border-border p-3 sm:p-4 flex items-center">
