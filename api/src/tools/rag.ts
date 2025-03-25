@@ -24,7 +24,7 @@ export const queryRag = tool(
       });
 
       const results = await db.similaritySearchWithScore(queryText, 100, {
-        date: { $ne: "" },
+        date: { $ne: "" }, // This is a hack to get around a bug in ChromaDB
       });
 
       // Check if there are any matching results or if relevance score is too low

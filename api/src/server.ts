@@ -3,7 +3,6 @@ import cors from "cors";
 import express from "express";
 import { agent } from "./agents";
 import { EPISODES_BUCKET_NAME, PORT } from "./config";
-import { Episode } from "./types";
 
 const app = express();
 const storage = new Storage();
@@ -13,23 +12,58 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.get("/api/episodes", async (_, res) => {
+app.get("/api/episodes", async (req, res) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+
+    if (page < 1 || pageSize < 1) {
+      return res
+        .status(400)
+        .json({ error: "Page and pageSize must be positive numbers" });
+    }
+
     const [files] = await bucket.getFiles({
       maxResults: 1000,
       autoPaginate: false,
     });
-    const episodes: Episode[] = [];
 
-    for (const file of files) {
-      if (file.name.endsWith(".json")) {
+    // Create array of file metadata and names
+    const fileInfos = files
+      .filter((file) => file.name.endsWith(".json"))
+      .map((file) => ({
+        name: file.name,
+        creationTime: file.metadata.timeCreated!,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.creationTime).getTime() -
+          new Date(a.creationTime).getTime()
+      );
+
+    // Calculate pagination
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedFiles = fileInfos.slice(startIndex, endIndex);
+
+    // Download files in parallel
+    const episodes = await Promise.all(
+      paginatedFiles.map(async (fileInfo) => {
+        const file = bucket.file(fileInfo.name);
         const [content] = await file.download();
-        const episode: Episode = JSON.parse(content.toString());
-        episodes.push(episode);
-      }
-    }
+        return JSON.parse(content.toString());
+      })
+    );
 
-    res.json({ episodes: episodes.reverse() });
+    res.json({
+      episodes,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalEpisodes: fileInfos.length,
+        totalPages: Math.ceil(fileInfos.length / pageSize),
+      },
+    });
   } catch (error) {
     console.error("Error reading episodes:", error);
     res.status(500).json({ error: "Failed to fetch episodes" });
